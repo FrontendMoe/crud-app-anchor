@@ -5,108 +5,100 @@
  * IDL can be found at `target/idl/crud.json`.
  */
 export type Crud = {
-  address: 'coUnmi3oBUtwtd9fjeAvSsJssXh5A5xyPbhpewyzRVF'
-  metadata: {
-    name: 'crud'
-    version: '0.1.0'
-    spec: '0.1.0'
-    description: 'Created with Anchor'
-  }
-  instructions: [
+  "address": "coUnmi3oBUtwtd9fjeAvSsJssXh5A5xyPbhpewyzRVF",
+  "metadata": {
+    "name": "crud",
+    "version": "0.1.0",
+    "spec": "0.1.0",
+    "description": "Created with Anchor"
+  },
+  "instructions": [
     {
-      name: 'close'
-      discriminator: [98, 165, 201, 177, 108, 65, 206, 96]
-      accounts: [
+      "name": "createEntry",
+      "discriminator": [
+        248,
+        207,
+        142,
+        242,
+        66,
+        162,
+        150,
+        16
+      ],
+      "accounts": [
         {
-          name: 'payer'
-          writable: true
-          signer: true
+          "name": "journalEntry",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "arg",
+                "path": "title"
+              },
+              {
+                "kind": "account",
+                "path": "owner"
+              }
+            ]
+          }
         },
         {
-          name: 'crud'
-          writable: true
+          "name": "owner",
+          "writable": true,
+          "signer": true
         },
+        {
+          "name": "systemProgram",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "title",
+          "type": "string"
+        },
+        {
+          "name": "message",
+          "type": "string"
+        }
       ]
-      args: []
-    },
+    }
+  ],
+  "accounts": [
     {
-      name: 'decrement'
-      discriminator: [106, 227, 168, 59, 248, 27, 150, 101]
-      accounts: [
-        {
-          name: 'crud'
-          writable: true
-        },
+      "name": "journalEntrySpace",
+      "discriminator": [
+        187,
+        53,
+        42,
+        234,
+        114,
+        106,
+        21,
+        159
       ]
-      args: []
-    },
+    }
+  ],
+  "types": [
     {
-      name: 'increment'
-      discriminator: [11, 18, 104, 9, 104, 174, 59, 33]
-      accounts: [
-        {
-          name: 'crud'
-          writable: true
-        },
-      ]
-      args: []
-    },
-    {
-      name: 'initialize'
-      discriminator: [175, 175, 109, 31, 13, 152, 155, 237]
-      accounts: [
-        {
-          name: 'payer'
-          writable: true
-          signer: true
-        },
-        {
-          name: 'crud'
-          writable: true
-          signer: true
-        },
-        {
-          name: 'systemProgram'
-          address: '11111111111111111111111111111111'
-        },
-      ]
-      args: []
-    },
-    {
-      name: 'set'
-      discriminator: [198, 51, 53, 241, 116, 29, 126, 194]
-      accounts: [
-        {
-          name: 'crud'
-          writable: true
-        },
-      ]
-      args: [
-        {
-          name: 'value'
-          type: 'u8'
-        },
-      ]
-    },
-  ]
-  accounts: [
-    {
-      name: 'crud'
-      discriminator: [255, 176, 4, 245, 188, 253, 124, 25]
-    },
-  ]
-  types: [
-    {
-      name: 'crud'
-      type: {
-        kind: 'struct'
-        fields: [
+      "name": "journalEntrySpace",
+      "type": {
+        "kind": "struct",
+        "fields": [
           {
-            name: 'count'
-            type: 'u8'
+            "name": "owner",
+            "type": "pubkey"
           },
+          {
+            "name": "title",
+            "type": "string"
+          },
+          {
+            "name": "message",
+            "type": "string"
+          }
         ]
       }
-    },
+    }
   ]
-}
+};

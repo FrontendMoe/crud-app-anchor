@@ -8,63 +8,66 @@ declare_id!("coUnmi3oBUtwtd9fjeAvSsJssXh5A5xyPbhpewyzRVF");
 pub mod crud {
     use super::*;
 
-  pub fn close(_ctx: Context<CloseCrud>) -> Result<()> {
+  pub fn create_entry(ctx : Context<CreateEntry> , title : String ,message: String)->Result<()>{
+        msg!("Journal Entry Created");
+        msg!("Title: {}", title);
+        msg!("Message: {}", message);
+
+        let journal_entry = &mut ctx.accounts.journal_entry;
+        journal_entry.owner = ctx.accounts.owner.key();
+        journal_entry.title = title;
+        journal_entry.message = message;
+        Ok(())
+    
+
+  }
+
+  pub fn update_entry(ctx : Context<UpdateEntry> ,title :String , message : String ){
+    msg!("Journal Entry Updated");
+    msg!("Title: {}", title);
+    msg!("New Message: {}", message);
+
+    let journal_entry = &mut ctx.accounts.journal_entry;
+    journal_entry.message = message ; 
     Ok(())
   }
 
-  pub fn decrement(ctx: Context<Update>) -> Result<()> {
-    ctx.accounts.crud.count = ctx.accounts.crud.count.checked_sub(1).unwrap();
-    Ok(())
-  }
-
-  pub fn increment(ctx: Context<Update>) -> Result<()> {
-    ctx.accounts.crud.count = ctx.accounts.crud.count.checked_add(1).unwrap();
-    Ok(())
-  }
-
-  pub fn initialize(_ctx: Context<InitializeCrud>) -> Result<()> {
-    Ok(())
-  }
-
-  pub fn set(ctx: Context<Update>, value: u8) -> Result<()> {
-    ctx.accounts.crud.count = value.clone();
-    Ok(())
-  }
+  
 }
 
-#[derive(Accounts)]
-pub struct InitializeCrud<'info> {
-  #[account(mut)]
-  pub payer: Signer<'info>,
-
+// PDA
+// define all the accounts 
+#[derive(Accounts)] 
+#[instruction(title: String, message: String)]
+pub struct CreateEntry<'info>{
+  // Journal Accounts 
   #[account(
-  init,
-  space = 8 + Crud::INIT_SPACE,
-  payer = payer
+    init , // cause the account doesn't exist yet
+    payer  =owner , 
+    seeds = [title.as_bytes(), owner.key().as_ref()],
+    space = 8  +  JournalEntrySpace::INIT_SPACE,
+    bump
   )]
-  pub crud: Account<'info, Crud>,
+  pub journal_entry : Account<'info , JournalEntrySpace> , 
+  #[account(mut)]
+  pub owner  : Signer<'info>, 
   pub system_program: Program<'info, System>,
-}
-#[derive(Accounts)]
-pub struct CloseCrud<'info> {
-  #[account(mut)]
-  pub payer: Signer<'info>,
 
-  #[account(
-  mut,
-  close = payer, // close account and return lamports to payer
-  )]
-  pub crud: Account<'info, Crud>,
+
 }
 
-#[derive(Accounts)]
-pub struct Update<'info> {
-  #[account(mut)]
-  pub crud: Account<'info, Crud>,
-}
 
+#[derive(Accounts)] // define all the accounts needed including system program that owns the PDA
+
+
+
+// save journal data in an an account
 #[account]
 #[derive(InitSpace)]
-pub struct Crud {
-  count: u8,
+pub struct JournalEntrySpace{
+  pub owner : Pubkey, 
+  #[max_len(50)]
+  pub title : String , 
+  #[max_len(50)]
+  pub message   : String
 }
