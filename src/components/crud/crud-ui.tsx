@@ -1,27 +1,63 @@
 'use client'
 
 import { Keypair, PublicKey } from '@solana/web3.js'
-import { useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { ellipsify } from '../ui/ui-layout'
 import { ExplorerLink } from '../cluster/cluster-ui'
 import { useCrudProgram, useCrudProgramAccount } from './crud-data-access'
+import { useWallet } from '@solana/wallet-adapter-react'
+import { useCluster } from '../cluster/cluster-data-access'
 
 export function CrudCreate() {
-  const { initialize } = useCrudProgram()
+  // const { initialize } = useCrudProgram()
+  const [message, setMessage] = useState("")
+  const cluster = useCluster()
+  const [title, setTitle] = useState("")
+  const { createEntry } = useCrudProgram()
+  const { publicKey } = useWallet()
+  const isFormValid = title.trim() !== "" && message.trim() !== "";
+  
+  const handleSubmit = () => {
+    if (publicKey && isFormValid) {
+      createEntry.mutateAsync({ title, message, owner: publicKey });
+    }
+  };
 
+  if (!publicKey) {
+    return <p>Connect your wallet</p>;
+  }
+  useEffect(() => {
+    console.log(cluster)
+  },[cluster])
   return (
-    <button
-      className="btn btn-xs lg:btn-md btn-primary"
-      onClick={() => initialize.mutateAsync(Keypair.generate())}
-      disabled={initialize.isPending}
-    >
-      Create {initialize.isPending && '...'}
-    </button>
+    <div className="flex flex-col items-center space-y-[5px]">
+      <input
+        type="text"
+        placeholder="Title"
+        value={title}
+        onChange={(e) => setTitle(e.target.value)}
+        className="input input-bordered w-full max-w-xs"
+      />
+      <textarea
+        placeholder="Message"
+        value={message}
+        onChange={(e) => setMessage(e.target.value)}
+        className="textarea textarea-bordered w-full max-w-xs"
+      />
+      <br></br>
+      <button
+        className="btn btn-xs lg:btn-md btn-primary"
+        onClick={handleSubmit}
+        disabled={createEntry.isPending || !isFormValid}
+      >
+        Create Journal Entry {createEntry.isPending && "..."}
+      </button>
+    </div>
   )
 }
 
 export function CrudList() {
-  const { accounts, getProgramAccount } = useCrudProgram()
+  const { accounts, getProgramAccount   } = useCrudProgram()
 
   if (getProgramAccount.isLoading) {
     return <span className="loading loading-spinner loading-lg"></span>
@@ -54,69 +90,62 @@ export function CrudList() {
 }
 
 function CrudCard({ account }: { account: PublicKey }) {
-  const { accountQuery, incrementMutation, setMutation, decrementMutation, closeMutation } = useCrudProgramAccount({
+  const { accountQuery ,deleteEntry , updateEntry } = useCrudProgramAccount({
     account,
   })
+  const [newMessage, setNewMessage] = useState("")
+  const title = accountQuery.data?.title;
+    const { publicKey } = useWallet();
 
-  const count = useMemo(() => accountQuery.data?.count ?? 0, [accountQuery.data?.count])
+  useEffect(() => {
+    console.log({
+        accountQuery
+      })
+  } ,[accountQuery])
 
+  useEffect(() => {
+    console.log(newMessage)
+  },[newMessage])
   return accountQuery.isLoading ? (
     <span className="loading loading-spinner loading-lg"></span>
   ) : (
-    <div className="card card-bordered border-base-300 border-4 text-neutral-content">
-      <div className="card-body items-center text-center">
-        <div className="space-y-6">
-          <h2 className="card-title justify-center text-3xl cursor-pointer" onClick={() => accountQuery.refetch()}>
-            {count}
-          </h2>
-          <div className="card-actions justify-around">
-            <button
-              className="btn btn-xs lg:btn-md btn-outline"
-              onClick={() => incrementMutation.mutateAsync()}
-              disabled={incrementMutation.isPending}
-            >
-              Increment
-            </button>
-            <button
-              className="btn btn-xs lg:btn-md btn-outline"
+      <div className='bg-white text-black rounded p-5 overflow-hidden'>
+        <p>Title : {accountQuery.data?.title }</p>
+        <input placeholder={`Message : ${accountQuery.data?.message}`} onChange={(e)=>{setNewMessage(e.target.value)}}/>
+          
+        <p>Owner : {accountQuery.data?.owner.toString()}</p>
+        <div className='flex space-x-[10px]'>
+          <button       
               onClick={() => {
-                const value = window.prompt('Set value to:', count.toString() ?? '0')
-                if (!value || parseInt(value) === count || isNaN(parseInt(value))) {
-                  return
+                if (
+                  !window.confirm(
+                    "Are you sure you want to close this account?"
+                  )
+                ) {
+                  return;
                 }
-                return setMutation.mutateAsync(parseInt(value))
-              }}
-              disabled={setMutation.isPending}
-            >
-              Set
-            </button>
-            <button
-              className="btn btn-xs lg:btn-md btn-outline"
-              onClick={() => decrementMutation.mutateAsync()}
-              disabled={decrementMutation.isPending}
-            >
-              Decrement
-            </button>
-          </div>
-          <div className="text-center space-y-4">
-            <p>
-              <ExplorerLink path={`account/${account}`} label={ellipsify(account.toString())} />
-            </p>
-            <button
-              className="btn btn-xs btn-secondary btn-outline"
-              onClick={() => {
-                if (!window.confirm('Are you sure you want to close this account?')) {
-                  return
+                const title = accountQuery.data?.title;
+                if (title) {
+                  return deleteEntry.mutateAsync(title);
                 }
-                return closeMutation.mutateAsync()
               }}
-              disabled={closeMutation.isPending}
-            >
-              Close
-            </button>
-          </div>
+              disabled={deleteEntry.isPending} className='bg-red-200 p-2 rounded'>Delete</button>
+          <button onClick={() => {
+                if (
+                  !window.confirm(
+                    "Are you sure you want to update this account?"
+                  )
+                ) {
+                  return;
+                } 
+                              const title = accountQuery.data?.title;
+
+                if (newMessage && newMessage.length> 0 && title && publicKey) {
+                  return  updateEntry.mutateAsync({ title , message : newMessage, owner: publicKey });
+
+                }
+              }} className='bg-red-200 p-2 rounded'>Update</button>
         </div>
-      </div>
     </div>
   )
 }

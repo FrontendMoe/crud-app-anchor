@@ -24,7 +24,9 @@ export function useCrudProgram() {
   const { cluster } = useCluster()
   const transactionToast = useTransactionToast()
   const provider = useAnchorProvider()
-  const programId = useMemo(() => getCrudProgramId(cluster.network as Cluster), [cluster])
+const programId = new PublicKey(
+    "8focSSroVtMoNHTzCwyd6D7eL3HRhreUdfVYq8rda53j"
+  );
   const program = useMemo(() => getCrudProgram(provider, programId), [provider, programId])
 
   const accounts = useQuery({
@@ -66,6 +68,7 @@ export function useCrudProgram() {
     programId,
     accounts,
     getProgramAccount,
+    createEntry
   }
 }
 
@@ -73,6 +76,9 @@ export function useCrudProgramAccount({ account }: { account: PublicKey }) {
   const { cluster } = useCluster()
   const transactionToast = useTransactionToast()
   const { program, accounts } = useCrudProgram()
+  const programId = new PublicKey(
+    "8focSSroVtMoNHTzCwyd6D7eL3HRhreUdfVYq8rda53j"
+  );
 
   const accountQuery = useQuery({
     queryKey: ['crud', 'fetch', { cluster, account }],
@@ -80,6 +86,33 @@ export function useCrudProgramAccount({ account }: { account: PublicKey }) {
   })
 
   
+   const updateEntry = useMutation<string, Error, CreateEntryArgs>({
+    mutationKey: ["journalEntry", "update", { cluster }],
+    mutationFn: async ({ title, message, owner }) => {
+      const [journalEntryAddress] = await PublicKey.findProgramAddress(
+        [Buffer.from(title), owner.toBuffer()],
+        programId
+      );
+
+      return program.methods.updateEntry(title, message).rpc();
+    },
+    onSuccess: (signature) => {
+      transactionToast(signature);
+      accounts.refetch();
+    },
+    onError: (error) => {
+      toast.error(`Failed to update journal entry: ${error.message}`);
+    },
+   });
+  const deleteEntry = useMutation({
+    mutationKey: ["journal", "deleteEntry", { cluster, account }],
+    mutationFn: (title: string) =>
+      program.methods.deleteJournalEntry(title).rpc(),
+    onSuccess: (tx) => {
+      transactionToast(tx);
+      return accounts.refetch();
+    },
+  });
 
   
   
@@ -91,6 +124,8 @@ export function useCrudProgramAccount({ account }: { account: PublicKey }) {
 
   return {
     accountQuery,
+    updateEntry,
+    deleteEntry
     
   }
 }
